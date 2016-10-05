@@ -7,17 +7,40 @@
  * 
  * @note usually the API fails in newly videos...
  *
- * @version		1.0.0
+ * @version		1.0.2
  * @author		Dayvison
- * @date		04-10-2016
+ * @date		05-10-2016
  */
+//#define YOUTUBE_USE_TEXTDRAW
+//#define USE_REGEX
 
 #include <a_http>
-#tryinclude <regex> // [Plugin] Regular expression by Fro1sha: http://forum.sa-mp.com/showthread.php?t=247893
-#if defined _regex_included
-	#define USE_REGEX
+#if defined USE_REGEX
+	#tryinclude <regex> // [Plugin] Regular expression by Fro1sha: http://forum.sa-mp.com/showthread.php?t=247893
+	#if !defined _regex_included && !define regex_match_exid
+		#undef USE_REGEX
+		#error "Can't find regex plugin"
+ 	#endif
 #endif
+
+#if defined YOUTUBE_USE_TEXTDRAW
+	#define USE_TIMER
+#endif
+#if !defined USE_TIMER
+	#if defined OnFinishYoutubeUrl
+		#define USE_TIMER
+	#endif
+#endif
+
 static
+#if defined YOUTUBE_USE_TEXTDRAW	
+	PlayerText:youtube_textdraw[MAX_PLAYERS],
+#endif
+#if defined USE_TIMER
+	youtube_timer[MAX_PLAYERS],
+#endif
+	youtube_title[MAX_PLAYERS][128 char],
+	youtube_len[MAX_PLAYERS],
 	Float:youtube_posX[MAX_PLAYERS],
 	Float:youtube_posY[MAX_PLAYERS],
 	Float:youtube_posZ[MAX_PLAYERS],
@@ -32,50 +55,24 @@ static
  * @param      title     The title of url(if invalid \0)
  * @param      len       The length of url(if invalid 0)
  * @param      response  The response of url 
- * 							url codes:
+ * 							Response codes:
  * 							1 Sucess
  * 							-1 Invalid url
  * 							-2 Invalid page
  */
 	forward OnPlayYoutubeUrl(playerid, title[], len, response);
 #endif
+#if defined OnPlayYoutubeUrl
+/**
+ * Called when youtube url as finished.
+ *
+ * @param      playerid  The playerid
+ * @param      title     The title of url
+ * @param      len       The length of url
+ */
+	forward OnFinishYoutubeUrl(playerid, title[], len);
+#endif
 
-forward YoutubeResponse(playerid, response, data[]);
-public YoutubeResponse(playerid, response, data[])
-{
-	if(response == 200)
-	{
-		if(strfind(data, "No video was found") != -1 || strfind(data, "<meta http-equiv=") != -1)
-		{
-			#if defined OnPlayYoutubeUrl
-				OnPlayYoutubeUrl(playerid, "\0", 0, -1);
-			#endif
-			return;
-		}
-		new
-			title[60],
-			len[5],
-			Find
-		;
-		Find = strfind(data, "<br/>");
-		strmid(title, data, 7, Find-1);
-		strdel(data, 0, Find+5);
-
-		Find = strfind(data, "<br/>");
-		strmid(len, data, 8, Find-1);
-		strdel(data, 0, Find+11);
-		PlayAudioStreamForPlayer(playerid, data, youtube_posX[playerid], youtube_posY[playerid], youtube_posZ[playerid], youtube_distance[playerid], youtube_usepos[playerid]);
-		#if defined OnPlayYoutubeUrl
-			OnPlayYoutubeUrl(playerid, title, strval(len), 1);
-		#endif
-	}
-	else
-	{
-		#if defined OnPlayYoutubeUrl
-			OnPlayYoutubeUrl(playerid, "\0", 0, -2);
-		#endif
-	}
-}
 #if defined USE_REGEX
 /**
  * Determines if valid youtube url.
@@ -104,7 +101,7 @@ stock IsValidYoutubeUrl(const url[])
  *
  * @author		Dayvison
  * @date		04-10-2016
- * @return		True if is conver have sucess, false not.
+ * @return		True on convert have sucess, false not.
  */
 stock ConvertYoutubeUrl(Url[], size = sizeof(Url))
 {
@@ -131,7 +128,7 @@ stock ConvertYoutubeUrl(Url[], size = sizeof(Url))
  * @date		04-10-2016
  * @return		True on sucess, or false on failure. if USE_REGEX active is more efficient
  */
-stock PlayYoutubeForPlayer(playerid, url[], Float:posX = 0.0, Float:posY = 0.0, Float:posZ = 0.0, Float:distance = 50.0, usepos = 0)
+stock PlayYoutubeStreamForPlayer(playerid, url[], Float:posX = 0.0, Float:posY = 0.0, Float:posZ = 0.0, Float:distance = 50.0, usepos = 0)
 {
 	if(!IsPlayerConnected(playerid))
 		return false;
@@ -154,5 +151,257 @@ stock PlayYoutubeForPlayer(playerid, url[], Float:posX = 0.0, Float:posY = 0.0, 
 	youtube_posZ[playerid]		= posZ;
 	youtube_distance[playerid]	= distance;
 	youtube_usepos[playerid]	= usepos;
+	youtube_title[playerid]{0} = '\0';
+	youtube_len[playerid] = 0;
 	return true;
+}
+
+/**
+ * Stop an youtube 'audio stream' for a player.
+ *
+ * @param      playerid  The ID of the player to play the audio for.
+ *
+ * @author		Dayvison
+ * @date		05-10-2016
+ * @return		True on sucess, or false on failure.
+ */
+stock StopYoutubeStreamForPlayer(playerid)
+	return StopAudioStreamForPlayer(playerid);
+
+/**
+ * Gets the youtube stream title.
+ *
+ * @param      playerid  The playerid
+ * @param      dest      The destination
+ * @param      size      The size
+ *
+ * @author		Dayvison
+ * @date		05-10-2016
+ * @return		1 on sucess, 0 on fails
+ */
+stock GetYoutubeStreamTitle(playerid, dest[], size = sizeof(dest))
+{
+	if(!IsPlayerConnected(playerid))
+		return 0;
+	strunpack(dest, youtube_title[playerid], size);
+	return 1;
+}
+
+/**
+ * Gets the youtube stream length.
+ *
+ * @param      playerid  The playerid
+ *
+ * @author		Dayvison
+ * @date		05-10-2016
+ * @return		The length of stream
+ */
+stock GetYoutubeStreamLen(playerid)
+{
+	if(!IsPlayerConnected(playerid))
+		return 0;
+	return youtube_len[playerid];
+}
+
+/**
+ * Gets the youtube stream position x.
+ *
+ * @param      playerid  The playerid
+ *
+ * @author		Dayvison
+ * @date		05-10-2016
+ * @return		The position x
+ */
+stock GetYoutubeStreamPosX(playerid)
+{
+	if(!IsPlayerConnected(playerid))
+		return 0.0;
+	return youtube_posX[playerid];
+}
+
+/**
+ * Gets the youtube stream position y.
+ *
+ * @param      playerid  The playerid
+ *
+ * @author		Dayvison
+ * @date		05-10-2016
+ * @return		The position y
+ */
+stock GetYoutubeStreamPosY(playerid)
+{
+	if(!IsPlayerConnected(playerid))
+		return 0.0;
+	return youtube_posY[playerid];
+}
+
+/**
+ * Gets the youtube stream position z.
+ *
+ * @param      playerid  The playerid
+ *
+ * @author		Dayvison
+ * @date		05-10-2016
+ * @return		The position z
+ */
+stock GetYoutubeStreamPosZ(playerid)
+{
+	if(!IsPlayerConnected(playerid))
+		return 0.0;
+	return youtube_posZ[playerid];
+}
+
+/**
+ * Gets the youtube stream distance.
+ *
+ * @param      playerid  The playerid
+ *
+ * @author		Dayvison
+ * @date		05-10-2016
+ * @return		The stream distance
+ */
+stock GetYoutubeStreamDistance(playerid)
+{
+	if(!IsPlayerConnected(playerid))
+		return 0.0;
+	return youtube_distance[playerid];
+}
+
+/**
+ * Determines if youtube stream use position.
+ *
+ * @param      playerid  The playerid
+ *
+ * @author		Dayvison
+ * @date		05-10-2016
+ * @return		The usepos
+ */
+stock bool:IsYoutubeStreamUsePos(playerid)
+{
+	if(!IsPlayerConnected(playerid))
+		return false;
+	return youtube_usepos[playerid];
+}
+/**
+ * Internal
+ */
+#if defined USE_TIMER
+	forward intern_OnStopUrl(playerid);
+	public intern_OnStopUrl(playerid)
+	{
+		#if defined OnFinishYoutubeUrl
+			static unpack[128];
+			strunpack(unpack, youtube_title[playerid]);
+			OnFinishYoutubeUrl(playerid, unpack, youtube_len[playerid]);
+		#endif
+		#if defined YOUTUBE_USE_TEXTDRAW
+			PlayerTextDrawHide(playerid, youtube_textdraw[playerid]);
+		#endif
+		youtube_title[playerid]{0} = '\0';
+		youtube_len[playerid] = 0;
+		youtube_timer[playerid] = -1;
+	}
+	public OnPlayerDisconnect(playerid)
+	{
+		if(youtube_timer[playerid] != -1)
+			KillTimer(youtube_timer[playerid]);
+		youtube_timer[playerid] = -1;
+		#if defined stream_OnPlayerDisconnect
+			return stream_OnPlayerDisconnect(playerid);
+		#else
+			return 1;
+		#endif
+	}
+	#if defined _ALS_OnPlayerDisconnect
+		#undef OnPlayerDisconnect
+	#else
+		#define _ALS_OnPlayerDisconnect
+	#endif
+	 
+	#define OnPlayerDisconnect stream_OnPlayerDisconnect
+	#if defined stream_OnPlayerDisconnect
+		forward stream_OnPlayerDisconnect(playerid);
+	#endif
+#endif
+
+#if defined YOUTUBE_USE_TEXTDRAW
+	public OnPlayerConnect(playerid)
+	{
+		youtube_textdraw[playerid] = CreatePlayerTextDraw(playerid, 6.000000, 435.000000, "--");
+		PlayerTextDrawLetterSize(playerid, youtube_textdraw[playerid], 0.224304, 1.308333);
+		PlayerTextDrawAlignment(playerid, youtube_textdraw[playerid], 1);
+		PlayerTextDrawColor(playerid, youtube_textdraw[playerid], 0xC1C1C1DD);
+		PlayerTextDrawSetShadow(playerid, youtube_textdraw[playerid], 0);
+		PlayerTextDrawSetOutline(playerid, youtube_textdraw[playerid], 0);
+		PlayerTextDrawBackgroundColor(playerid, youtube_textdraw[playerid], 0xC1C1C1DD);
+		PlayerTextDrawFont(playerid, youtube_textdraw[playerid], 1);
+		PlayerTextDrawSetProportional(playerid, youtube_textdraw[playerid], 1);
+		PlayerTextDrawSetShadow(playerid, youtube_textdraw[playerid], 0);
+		
+		#if defined stream_OnPlayerConnect
+			return stream_OnPlayerConnect(playerid);
+		#else
+			return 1;
+		#endif
+	}
+	#if defined _ALS_OnPlayerConnect
+		#undef OnPlayerConnect
+	#else
+		#define _ALS_OnPlayerConnect
+	#endif
+	 
+	#define OnPlayerConnect stream_OnPlayerConnect
+	#if defined stream_OnPlayerConnect
+		forward stream_OnPlayerConnect(playerid);
+	#endif
+
+#endif
+
+forward YoutubeResponse(playerid, response, data[]);
+public YoutubeResponse(playerid, response, data[])
+{
+	if(response == 200)
+	{
+		if(strfind(data, "No video was found") != -1 || strfind(data, "<meta http-equiv=") != -1)
+		{
+			#if defined OnPlayYoutubeUrl
+				OnPlayYoutubeUrl(playerid, "\0", 0, -1);
+			#endif
+			return;
+		}
+		new
+			title[60],
+			len[5],
+			Find
+		;
+		Find = strfind(data, "<br/>");
+		strmid(title, data, 7, Find-1);
+		strdel(data, 0, Find+5);
+
+		Find = strfind(data, "<br/>");
+		strmid(len, data, 8, Find-1);
+		strdel(data, 0, Find+11);
+
+		strpack(youtube_title[playerid], title);
+		youtube_len[playerid] = strval(len);
+
+		PlayAudioStreamForPlayer(playerid, data, youtube_posX[playerid], youtube_posY[playerid], youtube_posZ[playerid], youtube_distance[playerid], youtube_usepos[playerid]);
+		#if defined YOUTUBE_USE_TEXTDRAW
+			PlayerTextDrawSetString(playerid, youtube_textdraw[playerid], title);
+			PlayerTextDrawShow(playerid, youtube_textdraw[playerid]);
+			print("Show");
+		#endif
+		#if defined USE_TIMER
+		youtube_timer[playerid] = SetTimerEx("intern_OnStopUrl", strval(len)*1000, false, "d", playerid);
+		#endif
+		#if defined OnPlayYoutubeUrl
+			OnPlayYoutubeUrl(playerid, title, strval(len), 1);
+		#endif
+	}
+	else
+	{
+		#if defined OnPlayYoutubeUrl
+			OnPlayYoutubeUrl(playerid, "\0", 0, -2);
+		#endif
+	}
 }
