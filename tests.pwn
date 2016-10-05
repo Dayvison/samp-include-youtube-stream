@@ -1,6 +1,7 @@
 #include <a_samp>
 #include <core>
 #include <audio>
+#define YOUTUBE_USE_TEXTDRAW
 #include <youtube_stream>
 
 #pragma tabsize 0
@@ -34,6 +35,13 @@ public OnPlayerCommandText(playerid, cmdtext[])
 	}
 
 	return 0;
+}
+
+public OnFinishYoutubeUrl(playerid, title[], len)
+{
+	new string[156];
+	format(string, sizeof(string), "A music %s, as finished after %d seconds.", title, len);
+	SendClientMessage(playerid, -1, string);
 }
 public OnPlayYoutubeUrl(playerid, title[], len, response)
 {
