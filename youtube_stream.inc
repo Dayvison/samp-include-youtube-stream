@@ -301,13 +301,13 @@ stock bool:IsYoutubeStreamUsePos(playerid)
 		youtube_len[playerid] = 0;
 		youtube_timer[playerid] = -1;
 	}
-	public OnPlayerDisconnect(playerid)
+	public OnPlayerDisconnect(playerid, reason)
 	{
 		if(youtube_timer[playerid] != -1)
 			KillTimer(youtube_timer[playerid]);
 		youtube_timer[playerid] = -1;
 		#if defined stream_OnPlayerDisconnect
-			return stream_OnPlayerDisconnect(playerid);
+			return stream_OnPlayerDisconnect(playerid, reason);
 		#else
 			return 1;
 		#endif
@@ -320,7 +320,7 @@ stock bool:IsYoutubeStreamUsePos(playerid)
 	 
 	#define OnPlayerDisconnect stream_OnPlayerDisconnect
 	#if defined stream_OnPlayerDisconnect
-		forward stream_OnPlayerDisconnect(playerid);
+		forward stream_OnPlayerDisconnect(playerid, reason);
 	#endif
 #endif
 
