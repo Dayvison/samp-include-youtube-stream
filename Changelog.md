@@ -1,3 +1,7 @@
+## [1.0.2] - 2016-10-07
+### Added
+- [GetYoutubeStreamPos](README.MD#getyoutubestreampos) function
+
 ## [1.0.1] - 2016-10-05
 ### Added
 - [Configuration macros](#configuration)

@@ -22,6 +22,7 @@ Include to allow you reproduce an youtube url
 * [StopYoutubeStreamForPlayer](#stopyoutubestreamforplayer)
 * [GetYoutubeStreamTitle](#getyoutubestreamtitle)
 * [GetYoutubeStreamLen](#getyoutubestreamlen)
+* [GetYoutubeStreamPos](#getyoutubestreampos)
 * [GetYoutubeStreamPosX](#getyoutubestreamposx)
 * [GetYoutubeStreamPosY](#getyoutubestreamposy)
 * [GetYoutubeStreamPosZ](#getyoutubestreamposz)
@@ -116,6 +117,18 @@ Include to allow you reproduce an youtube url
 >	* `playerid`: The playerid
 >* **Returns:**
 >	* The length of stream
+
+***
+
+#### GetYoutubeStreamPos
+> Gets the youtube stream position.
+>* **Parameters:**
+>	* `playerid`: The playerid
+>	* `x`: The x position passed by reference
+>	* `y`: The y position passed by reference
+>	* `z`: The z position passed by reference
+>* **Returns:**
+>	* 1 on sucess, 0 failure
 
 ***
 

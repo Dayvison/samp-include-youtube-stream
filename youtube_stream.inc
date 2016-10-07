@@ -204,6 +204,28 @@ stock GetYoutubeStreamLen(playerid)
 }
 
 /**
+ * Gets the youtube stream position.
+ *
+ * @param      playerid  The playerid
+ * @param      x		 The x position passed by reference
+ * @param      y		 The y position passed by reference
+ * @param      z		 The z position passed by reference
+ *
+ * @author		Dayvison
+ * @date		07-10-2016
+ * @return		1 on sucess, 0 failure
+ */
+stock GetYoutubeStreamPos(playerid, &x, &y, &z)
+{
+	if(!IsPlayerConnected(playerid))
+		return 0;
+	x = youtube_posX[playerid];
+	y = youtube_posY[playerid];
+	z = youtube_posZ[playerid];
+	return 1;
+}
+
+/**
  * Gets the youtube stream position x.
  *
  * @param      playerid  The playerid
